@@ -12,6 +12,7 @@
  *  overlay 255
  *  overlay 265
  *  arm9
+ *  y9.bin (or whatever the overlay table is called)
  *  the narcs that you edited from the tutorial
  *
  * save rom--should be all set.  fairy type becomes type 17.
@@ -781,7 +782,7 @@ pop {r2-r3, pc}
 
 // repoint overlay 167 to load properly from new location
 
-.open "filesys/y9.bin", 0
+.open "filesys/y9.bin", "y9.bin", 0
 
 .org (167 * 0x20 + 4)
 
