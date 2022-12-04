@@ -9,6 +9,4 @@
 
 .word 0
 
-.pool
-
 .close
