@@ -28,7 +28,7 @@
 // configs
 MEROMERO_SUMMARY_SCREEN_FIX equ 0
 BLU_SUMMARY_SCREEN_FIX equ 1
-BLU_PC_SCREEN_FIX equ 1
+BLU_PC_SCREEN_FIX equ 0
 
 BLACK2 equ 0
 
@@ -55,6 +55,7 @@ TYPE_FAIRY equ 17
 NUM_OF_TYPES equ 18
 
 START_OF_NEW_TAGS equ 0x20 // god damn it
+START_OF_BOX_TAGS equ 0x32
 
 //.expfunc rgb555(red, green, blue), (red & 0x1F) | ((green & 0x1F) << 5) | ((blue & 0x1F) << 10)
 //.expfunc rgb(red, green, blue), rgb555(red / 8, green / 8, blue / 8)
@@ -73,169 +74,208 @@ START_OF_NEW_TAGS equ 0x20 // god damn it
 // code
 
 
-// relative offsets are the same so loading address should not matter
-//.if BLACK2 == 1
-//.open "filesys/overlay/overlay_0255.bin", "overlay_0255.bin", 0x021BB700
-//.else
+.if BLACK2 == 1
+.open "filesys/overlay/overlay_0255.bin", "overlay_0255.bin", 0x021BB700
+.else
 .open "filesys/overlay/overlay_0255.bin", "overlay_0255.bin", 0x021BB740
-//.endif
-
-// gotta get 0xA268 (where gfx info for fairy type is loaded) to be the old end of the structure, 0xA5BC.  expand structure to be 0xA700
-
-.org 0x021C2A50 // increase allocation
-
-.if BLU_PC_SCREEN_FIX == 1
-.word 0xA700
-.else
-.word 0xA5BC
-.endif
-
-
-.org 0x021D0846 // load in fairy gfx
-.if BLU_PC_SCREEN_FIX == 1
-cmp r4, NUM_OF_TYPES
-.else
-cmp r4, NUM_OF_TYPES-1
-.endif
-
-.org 0x021D09AC // move type gfx tracker whatever to end of old structure
-.if BLU_PC_SCREEN_FIX == 1
-.word 0xA5BC
-.else
-.word 0xA268
-.endif
-
-
-// put a read breakpoint at 0x02271558 (0x022672F0+0xA268).  need to find where the old one is
-// 021cf578 - A0DC from 226747C ends up being 2271558.  need to make this A430 under the right circumstances (if A0DC would have been A268-A2AC)
-
-
-// starting index below
-.org 0x021D0A00
-.if BLU_PC_SCREEN_FIX == 1
-add r1, #START_OF_NEW_TAGS
-.else
-add r1, #0x20
-.endif
-
-.org 0x021D0A0A
-.if BLU_PC_SCREEN_FIX == 1
-cmp r4, NUM_OF_TYPES
-.else
-cmp r4, NUM_OF_TYPES-1
-.endif
-
-
-.if BLU_PC_SCREEN_FIX == 1
-.org 0x021CF574
-bl (patch_load_fairy_from_elsewhere + (BLACK2 == 1 ? 0x40 : 0))
-.else
-ldr r1, [pc, #0x2c]  ; +0 = 0b 49
-ldr r0, [pc, #0x30]  ; +2 = 0c 48
-.endif
-
-
-// starting index below
-.org 0x021BF2F0
-.if BLU_PC_SCREEN_FIX == 1
-mov r4, #START_OF_NEW_TAGS
-.else
-mov r4, #0x20
-.endif
-
-.org 0x021BF300 // deletes when moving to a blank spot with the rest of the sprites
-.if BLU_PC_SCREEN_FIX == 1
-cmp r4, #(START_OF_NEW_TAGS + NUM_OF_TYPES)
-.else
-cmp r4, #(0x20 + NUM_OF_TYPES-1)
-.endif
-
-
-.org 0x021D0A6E // starting index below
-.if BLU_PC_SCREEN_FIX == 1
-mov r4, #START_OF_NEW_TAGS
-.else
-mov r4, #0x20
-.endif
-
-
-.org 0x021D0A7E // deletes when swapping to a new mon
-.if BLU_PC_SCREEN_FIX == 1
-cmp r4, #(START_OF_NEW_TAGS + NUM_OF_TYPES)
-.else
-cmp r4, #(0x20 + NUM_OF_TYPES-1)
-.endif
-
-
-.org 0x021D0A22 // move the type tags
-.if BLU_PC_SCREEN_FIX == 1
-add r7, #START_OF_NEW_TAGS
-.else
-add r7, #0x20
-.endif
-
-
-.org 0x021D0A4A // move the type tags here too?
-.if BLU_PC_SCREEN_FIX == 1
-add r4, #START_OF_NEW_TAGS
-.else
-add r4, #0x20
 .endif
 
 
 
+StorageSystemStruct_SizeIncrease equ (NUM_OF_TYPES * 4) * 2
+
+StorageSystemStruct_OldSize equ 0xA5BC
+
+StorageSystemStruct_Size equ (StorageSystemStruct_OldSize + StorageSystemStruct_SizeIncrease)
+
+StorageSystem_Component_UpdatePosition equ (BLACK2 == 1 ? 0x021CF6C8 : 0x021CF708)
+
+StorageSystem_SetComponentActivity equ (BLACK2 == 1 ? 0x021CF63C : 0x021CF67C)
+
+StorageSystem_CreateTypeComponents equ (BLACK2 == 1 ? 0x021D0978 : 0x021D09B8)
+
+mem_copy equ (BLACK2 == 1 ? 0x02078920 : 0x0207894C)
+
+StorageSystem_CreateComponent equ (BLACK2 == 1 ? 0x021CF51C : 0x021CF55C)
+
+GetFileNumForType equ (BLACK2 == 1 ? 0x0202D7F4 : 0x0202D820)
+
+NCGRManager_ReadNCGR equ (BLACK2 == 1 ? 0x0204B81C : 0x0204B848)
+
+G2DManager_CreateSprite equ (BLACK2 == 1 ? 0x0204C040 : 0x0204C06C)
+
+GetPaletteNumForType equ (BLACK2 == 1 ? 0x0202D7E8 : 0x0202D814)
+
+SetSpriteActivity equ (BLACK2 == 1 ? 0x0204C124 : 0x0204C150)
+
+StoreSpritePaletteIndex equ (BLACK2 == 1 ? 0x0204C378 : 0x0204C3A4)
+
+StorageSystem_OnPokemonSelect_DisableTypes equ (BLACK2 == 1 ? 0x021D0A28 : 0x021D0A68)
+
+StorageSystem_EnableTypes equ (BLACK2 == 1 ? 0x021D09DC : 0x021D0A1C)
+
+StorageSystem_OnDeselect_DisableTypes equ (BLACK2 == 1 ? 0x021BF2B0 : 0x021BF2F0)
 
 
 
+//StorageSystem_Initialize
+
+.org BLACK2 == 1 ? 0x021C2A10 : 0x021C2A50
+.word StorageSystemStruct_Size                            //Memory Allocation
+
+
+//ReadTypeNCGRFiles
+
+
+.org BLACK2 == 1 ? 0x021D0806 : 0x021D0846
+    cmp r4, #NUM_OF_TYPES
+
+
+.org BLACK2 == 1 ? 0x021D096C : 0x021D09AC
+.word StorageSystemStruct_Size - StorageSystemStruct_SizeIncrease        	//Offset to where the type icon component NCGR file reference indices are stored.
 
 
 
-// me when i write too much asm in the name of fixing things that are not broken:
+//StorageSystem_CreateTypeComponents
 
-// this is the 0x81 loop deallocator--does everything for the summary screen.  works without patch
-//.org 0x021CF4D2
-//.if BLU_PC_SCREEN_FIX == 1
-//bl patch_load_fairy_from_elsewhere_r7
-//.else
-//lsl r0, r4, #2
-//add r0, r5, r0
-//.endif
+.org StorageSystem_CreateTypeComponents
+.area (BLACK2 == 1 ? 0x021D09DC : 0x021D0A1C) - ., 0
+    push {r3-r7,lr}
+    sub sp, #0x18
+    mov r5, r0
+    ldr r0, =0x21D759C
+    add r1, sp, #0
+    mov r2, #25
+    blx mem_copy
+    add r7, sp, #0
+    mov r4, #0
+CreateTypeIconComponentsLoop:
+    mov r0, r4
+    add r0, #156
+    add r0, #156
+    str r0, [sp, #8]
+    lsl r0, r4, #2
+    add r6, r5, r0
+    mov r0, r5
+    mov r1, r7
+    bl StorageSystem_CreateComponent
+    ldr r1, =StorageSystemStruct_Size - (StorageSystemStruct_SizeIncrease / 2)    //Offset to where the type icon component pointers are stored. Index of the first icon is 475.
+    str r0, [r6, r1]
+    mov r0, r4
+    bl GetPaletteNumForType
+    mov r1, r0
+    ldr r0, =StorageSystemStruct_Size - (StorageSystemStruct_SizeIncrease / 2)
+    ldr r0, [r6, r0]
+    mov r2, 1
+    bl StoreSpritePaletteIndex
+    mov r1, r4
+    mov r0, r5
+    add r1, #255
+    add r1, #220
+    mov r2, #0
+    bl StorageSystem_SetComponentActivity
+    add r4, r4, #1
+    cmp r4, #NUM_OF_TYPES
+    bcc CreateTypeIconComponentsLoop
+    add sp, #0x18
+    pop {r3-r7,pc}
+
+.pool
+.endarea
 
 
-//// new:
-//.org 0x021CF51C // 0x81 loop that works?
-//.if BLU_PC_SCREEN_FIX == 1
-//.word 0xA5DC
-//.else
-//.word 0xA0DC
-//.endif
+//StorageSystem_OnPokemonSelect_DisableTypes
 
+.org StorageSystem_OnPokemonSelect_DisableTypes
+.area (BLACK2 == 1 ? 0x021D0A58 : 0x021D0A98) - ., 0
+    push {r3-r7, lr}
+    mov r5, r0
+    mov r7, r1
+    mov r4, #220
+    mov r6, #255
+StorageSystem_OnPokemonSelect_DisableTypes_Loop:
+    mov r0, r5
+    add r1, r4, r6
+    mov r2, #0
+    bl StorageSystem_SetComponentActivity
+    add r4, #1
+    cmp r4, #220 + NUM_OF_TYPES
+    bcc StorageSystem_OnPokemonSelect_DisableTypes_Loop
+    ldrb r0, [r7, 0x12]
+    lsl r0, r0, #0x18
+    lsr r0, r0, #0x1F
+    bne StorageSystem_OnPokemonSelect_DisableTypes_Return
+    ldrb r1, [r7, #0xC]	  //Type1
+    ldrb r2, [r7, #0xD]	  //Type2
+    mov r0, r5
+    bl StorageSystem_EnableTypes
+StorageSystem_OnPokemonSelect_DisableTypes_Return:
+    pop {r3-r7, pc}
 
+.endarea
 
-//.org 0x021CF7DC
-//.if BLU_PC_SCREEN_FIX == 1
-//bl patch_load_fairy_from_elsewhere_r1
-//.else
-//add r2, r5, r1
-//ldr r1, [pc, #0xa0]  ; +0 = 28 49
-//.endif
+//StorageSystem_EnableTypes
 
-//.org 0x021CF880 // 0x60 loop that does not work
-//.if BLU_PC_SCREEN_FIX == 1
-//.word 0xA5DC
-//.else
-//.word 0xA0DC
-//.endif
+.org StorageSystem_EnableTypes
+.area (BLACK2 == 1 ? 0x021D0A28 : 0x021D0A68) - ., 0
+    push {r3-r7, lr}
+    mov r7, #255
+    add r7, #220
+    mov r4, r0
+    add r1, r7
+    mov r5, r1
+    mov r6, r2
+    mov r2, #1
+    bl StorageSystem_SetComponentActivity
+    mov r0, #1
+    str r0, [sp]
+    mov r1, r5
+    mov r0, r4
+    mov r2, #88
+    mov r3, #56
+    bl StorageSystem_Component_UpdatePosition
+    cmp r6, #0
+    beq StorageSystem_EnableTypes_Return
+    add r6, r7
+    cmp r5, r6
+    beq StorageSystem_EnableTypes_Return
+    mov r0, r4
+    mov r1, r6
+    mov r2, #1
+    bl StorageSystem_SetComponentActivity
+    mov r0, #1
+    str r0, [sp]
+    mov r0, r4
+    mov r1, r6
+    mov r2, #122
+    mov r3, #56
+    bl StorageSystem_Component_UpdatePosition
+StorageSystem_EnableTypes_Return:
+    pop {r3-r7, pc}
+.endarea
 
+//StorageSystem_OnDeselect_DisableTypes
 
-//.org 0x021CF5A4 // called once each thing i believe
-//.if BLU_PC_SCREEN_FIX == 1
-//.word 0xA5DC
-//.else
-//.word 0xA0DC
-//.endif
+.org StorageSystem_OnDeselect_DisableTypes
+    mov r4, #220
+    mov r6, #255
+    StorageSystem_OnDeselect_DisableTypes_Loop:
+    ldr r0, [r5, #0x2C]
+    add r1, r4, r6
+    mov r2, #0
+    bl StorageSystem_SetComponentActivity
+    add r4, #1
+    cmp r4, #220 + NUM_OF_TYPES
+    bcc StorageSystem_OnDeselect_DisableTypes_Loop
 
+.org BLACK2 == 1 ? 0x021BF2D4 : 0x021BF314
+    mov r2, #0                	//Before 0 was stored in r6 and then moved into r2, but to optimize for code size we're just moving 0 directly into r2
 
+.org BLACK2 == 1 ? 0x021BF2DE : 0x021BF31E
+    mov r2, #0
+
+.org BLACK2 == 1 ? 0x021BF2A8 : 0x021BF2E8
+    mov r2, #0
 
 .close
 
@@ -246,6 +286,15 @@ add r4, #0x20
 .open "filesys/overlay/overlay_0265.bin", "overlay_0265.bin", 0x02199900
 .endif
 
+// edits to load a halfword from type_to_nameplate_palette (thanks sunkernenjoyer!)
+
+.org BLACK2 == 1 ? 0x0219AF28 : 0x0219AF68
+lsl r2, r1, #1
+
+.org BLACK2 == 1 ? 0x0219AF2C : 0x0219AF6C
+ldrh r1, [r1, r2]
+
+
 .org BLACK2 == 1 ? 0x02199F74 : 0x02199FB4
 
 .word type_to_loaded_gfx_hof // adjust this to go behind where it already is.
@@ -254,31 +303,47 @@ add r4, #0x20
 .org BLACK2 == 1 ? 0x0219B8C8 : 0x0219B908
 
 type_to_loaded_gfx_hof:
-/* TYPE_NORMAL   */ .word 0x2D
-/* TYPE_FIGHTING */ .word 0x26
-/* TYPE_FLYING   */ .word 0x28
-/* TYPE_POISON   */ .word 0x2E
-/* TYPE_GROUND   */ .word 0x2B
-/* TYPE_ROCK     */ .word 0x30
-/* TYPE_BUG      */ .word 0x22
-/* TYPE_GHOST    */ .word 0x29
-/* TYPE_STEEL    */ .word 0x31
-/* TYPE_FIRE     */ .word 0x27
-/* TYPE_WATER    */ .word 0x32
-/* TYPE_GRASS    */ .word 0x2A
-/* TYPE_ELECTRIC */ .word 0x25
-/* TYPE_PSYCHIC  */ .word 0x2F
-/* TYPE_ICE      */ .word 0x2C
-/* TYPE_DRAGON   */ .word 0x24
-/* TYPE_DARK     */ .word 0x23
-/* TYPE_FAIRY    */ .word 0x2D // fairy loads the normal spa
+/* TYPE_NORMAL   */ .halfword 0x2D
+/* TYPE_FIGHTING */ .halfword 0x26
+/* TYPE_FLYING   */ .halfword 0x28
+/* TYPE_POISON   */ .halfword 0x2E
+/* TYPE_GROUND   */ .halfword 0x2B
+/* TYPE_ROCK     */ .halfword 0x30
+/* TYPE_BUG      */ .halfword 0x22
+/* TYPE_GHOST    */ .halfword 0x29
+/* TYPE_STEEL    */ .halfword 0x31
+/* TYPE_FIRE     */ .halfword 0x27
+/* TYPE_WATER    */ .halfword 0x32
+/* TYPE_GRASS    */ .halfword 0x2A
+/* TYPE_ELECTRIC */ .halfword 0x25
+/* TYPE_PSYCHIC  */ .halfword 0x2F
+/* TYPE_ICE      */ .halfword 0x2C
+/* TYPE_DRAGON   */ .halfword 0x24
+/* TYPE_DARK     */ .halfword 0x23
+/* TYPE_FAIRY    */ .halfword 0x2D // fairy loads the normal spa
 
-// unsure yet
-.orga 0x21DC
-.word 4
 
-.orga 0x221C // fairy pal 9 is the new pal, but actually loading anything causes a hardware crash for some reason.  it literally loads and frees immediately too, so not sure what is going on.
-.word 0
+.org BLACK2 == 1 ? 0x0219BA98 : 0x0219BAD8
+
+type_to_nameplate_palette:
+.halfword 3
+.halfword 4
+.halfword 11
+.halfword 16
+.halfword 14
+.halfword 18
+.halfword 5
+.halfword 12
+.halfword 19
+.halfword 10
+.halfword 20
+.halfword 13
+.halfword 8
+.halfword 17
+.halfword 15
+.halfword 7
+.halfword 6
+.halfword 9
 
 
 
@@ -695,85 +760,6 @@ patch_4:
 
 .pool
 
-.elseif BLU_PC_SCREEN_FIX == 1
-
-.org 0x02093BF0
-
-/*
- *
- * brief:
- *
- * basically sub_21CF55C handles a bunch of gfx and there is like a substructure within the bigger structure that starts at like 0x18C of the bigger structure.
- * in there, there is an 0xA0DC--and this A0DC is the offset that loads what we want, corresponds to A268 under the right circumstances (when loading the types).
- * so i can create a little somewhat hacky workaround that does not involve expanding the inner structure but detects if it is loading within A268-A2AC of the overall structure,
- * and redirect it to load from A5BC instead.
- *
- * r4 is overall structure.
- *
- * needs to return offset in r1 and 9E94 in r0
- *
- */
-
-patch_load_fairy_from_elsewhere:
-push {r2-r3, lr}
-ldr r1, =0xA0DC
-add r2, r1
-sub r2, r4
-ldr r3, =(0xA268/*-0x18C*/)
-cmp r2, r3
-blt @@keep_r1_A0DC
-ldr r3, =(0xA2AC/*-0x18C*/)
-cmp r2, r3
-bhi @@keep_r1_A0DC
-
-ldr r1, =(0xA5BC-0x18C)//0xA430
-
-@@keep_r1_A0DC:
-ldr r0, =0x9E94
-pop {r2-r3, pc}
-
-
-//// r1, r2 free
-//patch_load_fairy_from_elsewhere_r7:
-//ldr r7, =0xA0DC
-//lsl r0, r4, #2
-//add r0, r7, r0
-//ldr r1, =(0xA268-0x18C)
-//cmp r0, r1
-//blt @@keep_r7_A0DC
-//ldr r1, =(0xA2AC-0x18C)
-//cmp r0, r1
-//bhi @@keep_r7_A0DC
-//
-//ldr r7, =(0xA5BC-0x18C)//0xA430
-//
-//@@keep_r7_A0DC:
-//lsl r0, r4, #2
-//add r0, r5, r0
-//bx lr
-//
-//
-//// r2, r3 free
-//patch_load_fairy_from_elsewhere_r1:
-//ldr r2, =0xA0DC
-//add r1, r2
-//ldr r2, =(0xA268-0x18C)
-//cmp r1, r2
-//blt @@keep_r1_A0DC
-//ldr r2, =(0xA2AC-0x18C)
-//cmp r1, r2
-//bhi @@keep_r1_A0DC
-//
-//ldr r1, =(0xA5BC-0x18C)//0xA430
-//b @@return
-//
-//@@keep_r1_A0DC:
-//ldr r1, =0xA0DC
-//@@return:
-//bx lr
-
-.pool
-
 .endif
 
 .close
@@ -791,6 +777,251 @@ pop {r2-r3, pc}
 
 .close
 
+
+
+.open "filesys/overlay/overlay_0298.bin", "overlay_0298.bin", 0x219FC00
+
+//NCGR Manager Data
+
+
+.org 0x21AC02C    	//Maximum amount of files it can read
+.halfword 0x21
+
+.close
+
+
+.open "filesys/overlay/overlay_0296.bin", "overlay_0296.bin", 0x219D720
+
+
+//TypeBitmapInfo, when viewing pokemon from other languages, the types position in the bitmap is defined in this table, with the structure of vertical row and horizontal row. This edit will make it display the ??? type icon instead of normal, where ??? will be replaced by the fairy graphics in a157
+
+.org 0x219FB2A
+.byte 4
+.byte 1
+
+
+PokedexStruct_SizeIncrease equ (18 * 4) * 2
+
+
+//InfoScreen_Initialize
+
+.org 0x219D7B0
+    mov r5, #173 + (PokedexStruct_SizeIncrease/4)            //Memory Allocation
+
+.org 0x219D7B6
+    lsl r5, #2
+
+//InfoScreen_CreateTypeIcons
+
+
+.org 0x219ECFC
+.area 0x219EDB8-., 0
+    mov r0, #92
+    lsl r0, #2
+    mov r1, #num_of_types
+    strb r1, [r5, r0]
+    add r0, #1
+    strb r1, [r5, r0]
+    mov r0, #173
+    lsl r0, #2
+    str r0, [sp, #20]
+    add r0, #72
+    str r0, [sp, #24]
+CreateTypeIconsForPokedexLoop:
+    lsl r0, r6, #2
+    add r4, r5, r0
+    mov r0, r6
+    bl GetFileNumForType
+    mov r1, r0
+    ldrh r0, [r5]
+    str r0, [sp]
+    mov r2, #0
+    ldr r3, [sp, #12]
+    ldr r0, [sp, #16]
+    bl NCGRManager_ReadNCGR
+    ldr r1, [sp, #20]
+    str r0, [r4, r1]
+    add r0, sp, #40
+    str r0, [sp]
+    str r7, [sp, #4]
+    ldrh r0, [r5]
+    str r0, [sp, #8]
+    ldr r1, [sp, #20]
+    mov r2, #200
+    mov r3, #204
+    ldr r1, [r4, r1]
+    ldr r2, [r5, r2]
+    ldr r3, [r5, r3]
+    ldr r0, [r5, #36]
+    bl G2DManager_CreateSprite
+    ldr r1, [sp, #24]
+    str r0, [r4, r1]
+    mov r0, r6
+    bl GetPaletteNumForType
+    mov r1, r0
+    ldr r0, [sp, #24]
+    ldr r0, [r4, r0]
+    mov r2, #1
+    bl StoreSpritePaletteIndex
+    ldr r1, [sp, #24]
+    ldr r0, [r4, r1]
+    mov r1, #2
+    bl 0x204C464
+    ldr r1, [sp, #24]
+    ldr r0, [r4, r1]
+    mov r1, #1
+    bl 0x204C344
+    ldr r1, [sp, #24]
+    ldr r0, [r4, r1]
+    mov r1, #0
+    bl SetSpriteActivity
+    add r6, #1
+    cmp r6, #num_of_types
+    bcc CreateTypeIconsForPokedexLoop
+    add sp, #0x30
+    pop {r3-r7, pc}
+
+
+PokedexStruct_GetTypeIconSpritePointer:
+    mov r1, #191
+    lsl r1, #2
+    ldr r0, [r0, r1]
+    bx lr
+
+.endarea
+
+//OnSwitch_UpdateTypeIcons
+
+.org 0x219EE50
+mov r2, #num_of_types
+
+
+//OnLangageButtonPress_CreateTypeIconsFromBitmap
+
+.org 0x219F16E
+cmp r0, #num_of_types
+
+
+//OnSwitch_DisableLanguageTypeIcons
+
+
+.org 0x219F716
+cmp r0, #num_of_types
+
+
+.org 0x219F72C
+cmp r1, #num_of_types
+
+
+.org 0x219F71E
+bl PokedexStruct_GetTypeIconSpritePointer
+
+.org 0x219F732
+add r0, r5, r1
+bl PokedexStruct_GetTypeIconSpritePointer
+
+
+//OnSwitch_ChangeTypeIcons
+
+.org 0x219EEBA
+cmp r0, #num_of_types
+
+.org 0x219EED8
+mov r1, #num_of_types
+
+.org 0x219EF14
+cmp r0, #num_of_types
+
+.org 0x219EF32
+mov r1, #num_of_types
+
+.org 0x219EF64
+cmp r4, #num_of_types
+
+.org 0x219EF9E
+cmp r6, #num_of_types
+
+.org 0x219F03C
+cmp r0, #num_of_types
+
+
+.org 0x219EEC8
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+
+.org 0x219EEE8
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+
+
+.org 0x219EF02
+lsl r1, #2
+add r0, r5, r1
+bl PokedexStruct_GetTypeIconSpritePointer
+
+.org 0x219EF22
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+
+.org 0x219EF3E
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+
+.org 0x219EF56
+lsl r0, r1, #2
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+
+.org 0x219EF74
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+
+.org 0x219EF8C
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+nop
+
+.org 0x219EFAC
+add r0, r5
+bl PokedexStruct_GetTypeIconSpritePointer
+nop
+
+.org 0x219EFBC
+lsl r2, r7, #16
+lsr r2, r2, #16
+
+.org 0x219EFC4
+bl PokedexStruct_GetTypeIconSpritePointer
+add r1, sp, #40
+add r1, 2
+
+
+//InfoScreenExit_RemoveTypeIcons
+
+
+.org 0x219EDE6
+mov r4, #0
+InfoScreenExit_RemoveTypeIconsLoop:
+mov r7, #191
+lsl r7, #2
+
+
+.org 0x219EDF6
+sub r7, #72
+ldr r0, [r6, r7]
+
+
+.org 0x219EE04
+cmp r4, #num_of_types
+bcc InfoScreenExit_RemoveTypeIconsLoop
+
+.close
 
 .notice "All done!"
 
@@ -829,63 +1060,4 @@ pop {r2-r3, pc}
  * .pool:
  *                                               E9 6B 1B 02
  * 02093C50  F9 6B 1B 02 51 A8 1B 02 71 8E 1B 02 83 8E 1B 02
- */
-
-
-
-
-
-
-
-
-/*
- *
- * the fairy type persists in pc screen for some reason!
- * 021BF0AE - grabs type 1 and type 2 from current mon in pc.  stores at r4+C and r4+D respectively
- * 021D0A8A of sub_21D0A68 - reads type 1 and type 2 as r1 and r2 for sub_21D0A1C -
- *
- *
- *
- * new idea:  reroute all of A0DC
- *
- * 021CF4CC is called when exiting
- * 021CF7DE is called when coming in
- * i think i just need hooks on both of these.
- *
- */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
- *
- * serperior - grass dragon - loads 0x10 and 0x14
- * infernape - fire fight - 0xE 0x6
- * metagross - steel psychic - 0xD 0x12
- * braviary - normal flying - 0x5 0x7
- * gyarados - water flying - 0xF 0x7
- * type+5 is fed in.  does not work necessarily tho
- *
- */
-
-
-/*
- * 022572E0 + type*4 + 0x130 = type+5 to load
- * CpuFill8 - writes 0s to the place?
- * 021B3A52 actually fills it out--needs more space?  nah, we hacking this shit.  fuck memory shenanigans
- *
- * can we hotswap nitrofs references real time?  something like that?
- *
- * (ptr at (ptr at 214197C)+0x10C) + 0x40*(type+5)
  */
