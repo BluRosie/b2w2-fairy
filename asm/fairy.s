@@ -11,6 +11,8 @@
  *  overlay 207
  *  overlay 255
  *  overlay 265
+ *  overlay 296
+ *  overlay 298
  *  arm9
  *  y9.bin (or whatever the overlay table is called)
  *  the narcs that you edited from the tutorial
@@ -28,7 +30,6 @@
 // configs
 MEROMERO_SUMMARY_SCREEN_FIX equ 0
 BLU_SUMMARY_SCREEN_FIX equ 1
-BLU_PC_SCREEN_FIX equ 0
 
 BLACK2 equ 0
 
@@ -68,7 +69,7 @@ START_OF_BOX_TAGS equ 0x32
 .error "Both MeroMero's summary screen fix and Blu's summary screen fix are enabled.  Aborting."
 .endif
 
-.notice "Building with " + (BLU_SUMMARY_SCREEN_FIX == 1 ? "Blu's" : (MEROMERO_SUMMARY_SCREEN_FIX == 1 ? "MeroMero's" : "no")) + " summary screen fix and " + (BLU_PC_SCREEN_FIX == 1 ? "Blu's" : "no") + " PC screen fix."
+.notice "Building with " + (BLU_SUMMARY_SCREEN_FIX == 1 ? "Blu's" : (MEROMERO_SUMMARY_SCREEN_FIX == 1 ? "MeroMero's" : "no")) + " summary screen fix and Sunkern's PC and Dex screen fixes."
 .notice "If these are not the desired settings, edit the \"configs\" at the beginning of the fairy.s file.  Building..."
 
 // code
@@ -143,7 +144,7 @@ StorageSystem_OnDeselect_DisableTypes equ (BLACK2 == 1 ? 0x021BF2B0 : 0x021BF2F0
     push {r3-r7,lr}
     sub sp, #0x18
     mov r5, r0
-    ldr r0, =0x21D759C
+    ldr r0, =(BLACK2 == 1 ? 0x021D755C : 0x021D759C)
     add r1, sp, #0
     mov r2, #25
     blx mem_copy
@@ -764,38 +765,16 @@ patch_4:
 
 .close
 
-
-
-// repoint overlay 167 to load properly from new location
-
-.open "filesys/y9.bin", "y9.bin", 0
-
-.org (167 * 0x20 + 4)
-
-.word (0x02199780 - ((BLACK2 == 1) ? 0x40 : 0))
-.word filesize("overlay_0167.bin")
-
-.close
-
-
-
-.open "filesys/overlay/overlay_0298.bin", "overlay_0298.bin", 0x219FC00
-
-//NCGR Manager Data
-
-
-.org 0x21AC02C    	//Maximum amount of files it can read
-.halfword 0x21
-
-.close
-
-
-.open "filesys/overlay/overlay_0296.bin", "overlay_0296.bin", 0x219D720
+.if BLACK2 == 1
+.open "filesys/overlay/overlay_0296.bin", "overlay_0296.bin", 0x0219D6E0
+.else
+.open "filesys/overlay/overlay_0296.bin", "overlay_0296.bin", 0x0219D720
+.endif
 
 
 //TypeBitmapInfo, when viewing pokemon from other languages, the types position in the bitmap is defined in this table, with the structure of vertical row and horizontal row. This edit will make it display the ??? type icon instead of normal, where ??? will be replaced by the fairy graphics in a157
 
-.org 0x219FB2A
+.org BLACK2 == 1 ? 0x0219FAEA : 0x0219FB2A
 .byte 4
 .byte 1
 
@@ -805,17 +784,17 @@ PokedexStruct_SizeIncrease equ (18 * 4) * 2
 
 //InfoScreen_Initialize
 
-.org 0x219D7B0
+.org BLACK2 == 1 ? 0x0219D770 : 0x0219D7B0
     mov r5, #173 + (PokedexStruct_SizeIncrease/4)            //Memory Allocation
 
-.org 0x219D7B6
+.org BLACK2 == 1 ? 0x0219D776 : 0x0219D7B6
     lsl r5, #2
 
 //InfoScreen_CreateTypeIcons
 
 
-.org 0x219ECFC
-.area 0x219EDB8-., 0
+.org BLACK2 == 1 ? 0x0219ECBC : 0x0219ECFC
+.area (BLACK2 == 1 ? 0x0219ED78 : 0x0219EDB8) - ., 0
     mov r0, #92
     lsl r0, #2
     mov r1, #num_of_types
@@ -866,11 +845,11 @@ CreateTypeIconsForPokedexLoop:
     ldr r1, [sp, #24]
     ldr r0, [r4, r1]
     mov r1, #2
-    bl 0x204C464
+    bl (BLACK2 == 1 ? 0x0204C438 : 0x0204C464)
     ldr r1, [sp, #24]
     ldr r0, [r4, r1]
     mov r1, #1
-    bl 0x204C344
+    bl (BLACK2 == 1 ? 0x0204C318 : 0x0204C344)
     ldr r1, [sp, #24]
     ldr r0, [r4, r1]
     mov r1, #0
@@ -892,111 +871,111 @@ PokedexStruct_GetTypeIconSpritePointer:
 
 //OnSwitch_UpdateTypeIcons
 
-.org 0x219EE50
+.org BLACK2 == 1 ? 0x0219EE10 : 0x0219EE50
 mov r2, #num_of_types
 
 
 //OnLangageButtonPress_CreateTypeIconsFromBitmap
 
-.org 0x219F16E
+.org BLACK2 == 1 ? 0x0219F12E : 0x0219F16E
 cmp r0, #num_of_types
 
 
 //OnSwitch_DisableLanguageTypeIcons
 
 
-.org 0x219F716
+.org BLACK2 == 1 ? 0x0219F6D6 : 0x0219F716
 cmp r0, #num_of_types
 
 
-.org 0x219F72C
+.org BLACK2 == 1 ? 0x0219F6EC : 0x0219F72C
 cmp r1, #num_of_types
 
 
-.org 0x219F71E
+.org BLACK2 == 1 ? 0x0219F6DE : 0x0219F71E
 bl PokedexStruct_GetTypeIconSpritePointer
 
-.org 0x219F732
+.org BLACK2 == 1 ? 0x0219F6F2 : 0x0219F732
 add r0, r5, r1
 bl PokedexStruct_GetTypeIconSpritePointer
 
 
 //OnSwitch_ChangeTypeIcons
 
-.org 0x219EEBA
+.org BLACK2 == 1 ? 0x0219EE7A : 0x0219EEBA
 cmp r0, #num_of_types
 
-.org 0x219EED8
+.org BLACK2 == 1 ? 0x0219EE98 : 0x0219EED8
 mov r1, #num_of_types
 
-.org 0x219EF14
+.org BLACK2 == 1 ? 0x0219EED4 : 0x0219EF14
 cmp r0, #num_of_types
 
-.org 0x219EF32
+.org BLACK2 == 1 ? 0x0219EEF2 : 0x0219EF32
 mov r1, #num_of_types
 
-.org 0x219EF64
+.org BLACK2 == 1 ? 0x0219EF24 : 0x0219EF64
 cmp r4, #num_of_types
 
-.org 0x219EF9E
+.org BLACK2 == 1 ? 0x0219EF5E : 0x0219EF9E
 cmp r6, #num_of_types
 
-.org 0x219F03C
+.org BLACK2 == 1 ? 0x0219EFFC : 0x0219F03C
 cmp r0, #num_of_types
 
 
-.org 0x219EEC8
+.org BLACK2 == 1 ? 0x0219EE88 : 0x0219EEC8
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 
-.org 0x219EEE8
+.org BLACK2 == 1 ? 0x0219EEA8 : 0x0219EEE8
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 
 
-.org 0x219EF02
+.org BLACK2 == 1 ? 0x0219EEC2 : 0x0219EF02
 lsl r1, #2
 add r0, r5, r1
 bl PokedexStruct_GetTypeIconSpritePointer
 
-.org 0x219EF22
+.org BLACK2 == 1 ? 0x0219EEE2 : 0x0219EF22
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 
-.org 0x219EF3E
+.org BLACK2 == 1 ? 0x0219EEFE : 0x0219EF3E
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 
-.org 0x219EF56
+.org BLACK2 == 1 ? 0x0219EF16 : 0x0219EF56
 lsl r0, r1, #2
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 
-.org 0x219EF74
+.org BLACK2 == 1 ? 0x0219EF34 : 0x0219EF74
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 
-.org 0x219EF8C
+.org BLACK2 == 1 ? 0x0219EF4C : 0x0219EF8C
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 nop
 
-.org 0x219EFAC
+.org BLACK2 == 1 ? 0x0219EF6C : 0x0219EFAC
 add r0, r5
 bl PokedexStruct_GetTypeIconSpritePointer
 nop
 
-.org 0x219EFBC
+.org BLACK2 == 1 ? 0x0219EF7C : 0x0219EFBC
 lsl r2, r7, #16
 lsr r2, r2, #16
 
-.org 0x219EFC4
+.org BLACK2 == 1 ? 0x0219EF84 : 0x0219EFC4
 bl PokedexStruct_GetTypeIconSpritePointer
 add r1, sp, #40
 add r1, 2
@@ -1005,21 +984,33 @@ add r1, 2
 //InfoScreenExit_RemoveTypeIcons
 
 
-.org 0x219EDE6
+.org BLACK2 == 1 ? 0x0219EDA6 : 0x0219EDE6
 mov r4, #0
 InfoScreenExit_RemoveTypeIconsLoop:
 mov r7, #191
 lsl r7, #2
 
 
-.org 0x219EDF6
+.org BLACK2 == 1 ? 0x0219EDB6 : 0x0219EDF6
 sub r7, #72
 ldr r0, [r6, r7]
 
 
-.org 0x219EE04
+.org BLACK2 == 1 ? 0x0219EDC4 : 0x0219EE04
 cmp r4, #num_of_types
 bcc InfoScreenExit_RemoveTypeIconsLoop
+
+.close
+
+
+// should be fine to not differentiate here between B2/W2 because file offset ends up being the same
+.open "filesys/overlay/overlay_0298.bin", "overlay_0298.bin", 0x0219FC00
+
+//NCGR Manager Data
+
+
+.org 0x021AC02C    	//Maximum amount of files it can read
+.halfword 0x21
 
 .close
 
@@ -1061,3 +1052,16 @@ bcc InfoScreenExit_RemoveTypeIconsLoop
  *                                               E9 6B 1B 02
  * 02093C50  F9 6B 1B 02 51 A8 1B 02 71 8E 1B 02 83 8E 1B 02
  */
+
+
+
+// repoint overlay 167 to load properly from new location
+
+.open "filesys/y9.bin", "y9.bin", 0
+
+.org (167 * 0x20 + 4)
+
+.word (0x02199780 - ((BLACK2 == 1) ? 0x40 : 0))
+.word filesize("overlay_0167.bin")
+
+.close
