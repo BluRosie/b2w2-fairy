@@ -1,5 +1,5 @@
 # Fairy Type in Black 2/White 2
-A repository housing the code and simple insertion steps for Fairy type in B2W2.  There are more in-depth directions [here](https://kingdom-of-ds-hacking.github.io/gen5/guides/misc/b2w2-fairy.html).  This repository only inserts the code!  Graphics and such are up to the user following [MeroMero's tutorial](https://www.pokecommunity.com/showthread.php?t=349000) or [my tutorial linked here](https://kingdom-of-ds-hacking.github.io/gen5/guides/misc/b2w2-fairy.html), which is a bit more modern.
+A repository housing the code and simple insertion steps for Fairy type in B2W2.  There are more in-depth directions [here](https://kingdom-of-ds-hacking.github.io/gen5/guides/misc/b2w2-fairy.html).  This repository only inserts the code!  Graphics and such are up to the user following [MeroMero's tutorial](https://www.pokecommunity.com/showthread.php?t=349000) or [my tutorial linked here](https://kingdom-of-ds-hacking.github.io/docs/generation-v/guides/b2w2-fairy/), which is a bit more modern.
 
 ## Directions
 - Download the code
