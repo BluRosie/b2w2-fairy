@@ -260,7 +260,7 @@ StorageSystem_EnableTypes_Return:
 .org StorageSystem_OnDeselect_DisableTypes
     mov r4, #220
     mov r6, #255
-    StorageSystem_OnDeselect_DisableTypes_Loop:
+StorageSystem_OnDeselect_DisableTypes_Loop:
     ldr r0, [r5, #0x2C]
     add r1, r4, r6
     mov r2, #0
@@ -275,7 +275,7 @@ StorageSystem_EnableTypes_Return:
 .org BLACK2 == 1 ? 0x021BF2DE : 0x021BF31E
     mov r2, #0
 
-.org BLACK2 == 1 ? 0x021BF2A8 : 0x021BF2E8
+.org BLACK2 == 1 ? 0x021BF2E8 : 0x021BF328
     mov r2, #0
 
 .close
