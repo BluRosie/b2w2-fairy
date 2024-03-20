@@ -304,47 +304,47 @@ ldrh r1, [r1, r2]
 .org BLACK2 == 1 ? 0x0219B8C8 : 0x0219B908
 
 type_to_loaded_gfx_hof:
-/* TYPE_NORMAL   */ .halfword 0x2D
-/* TYPE_FIGHTING */ .halfword 0x26
-/* TYPE_FLYING   */ .halfword 0x28
-/* TYPE_POISON   */ .halfword 0x2E
-/* TYPE_GROUND   */ .halfword 0x2B
-/* TYPE_ROCK     */ .halfword 0x30
-/* TYPE_BUG      */ .halfword 0x22
-/* TYPE_GHOST    */ .halfword 0x29
-/* TYPE_STEEL    */ .halfword 0x31
-/* TYPE_FIRE     */ .halfword 0x27
-/* TYPE_WATER    */ .halfword 0x32
-/* TYPE_GRASS    */ .halfword 0x2A
-/* TYPE_ELECTRIC */ .halfword 0x25
-/* TYPE_PSYCHIC  */ .halfword 0x2F
-/* TYPE_ICE      */ .halfword 0x2C
-/* TYPE_DRAGON   */ .halfword 0x24
-/* TYPE_DARK     */ .halfword 0x23
-/* TYPE_FAIRY    */ .halfword 0x2D // fairy loads the normal spa
+/* TYPE_NORMAL   */ .word 0x2D
+/* TYPE_FIGHTING */ .word 0x26
+/* TYPE_FLYING   */ .word 0x28
+/* TYPE_POISON   */ .word 0x2E
+/* TYPE_GROUND   */ .word 0x2B
+/* TYPE_ROCK     */ .word 0x30
+/* TYPE_BUG      */ .word 0x22
+/* TYPE_GHOST    */ .word 0x29
+/* TYPE_STEEL    */ .word 0x31
+/* TYPE_FIRE     */ .word 0x27
+/* TYPE_WATER    */ .word 0x32
+/* TYPE_GRASS    */ .word 0x2A
+/* TYPE_ELECTRIC */ .word 0x25
+/* TYPE_PSYCHIC  */ .word 0x2F
+/* TYPE_ICE      */ .word 0x2C
+/* TYPE_DRAGON   */ .word 0x24
+/* TYPE_DARK     */ .word 0x23
+/* TYPE_FAIRY    */ .word 0x2D // fairy loads the normal spa
 
 
 .org BLACK2 == 1 ? 0x0219BA98 : 0x0219BAD8
 
 type_to_nameplate_palette:
-.halfword 3
-.halfword 4
-.halfword 11
-.halfword 16
-.halfword 14
-.halfword 18
-.halfword 5
-.halfword 12
-.halfword 19
-.halfword 10
-.halfword 20
-.halfword 13
-.halfword 8
-.halfword 17
-.halfword 15
-.halfword 7
-.halfword 6
-.halfword 9
+/* TYPE_NORMAL   */ .halfword 3
+/* TYPE_FIGHTING */ .halfword 4
+/* TYPE_FLYING   */ .halfword 11
+/* TYPE_POISON   */ .halfword 16
+/* TYPE_GROUND   */ .halfword 14
+/* TYPE_ROCK     */ .halfword 18
+/* TYPE_BUG      */ .halfword 5
+/* TYPE_GHOST    */ .halfword 12
+/* TYPE_STEEL    */ .halfword 19
+/* TYPE_FIRE     */ .halfword 10
+/* TYPE_WATER    */ .halfword 20
+/* TYPE_GRASS    */ .halfword 13
+/* TYPE_ELECTRIC */ .halfword 8
+/* TYPE_PSYCHIC  */ .halfword 17
+/* TYPE_ICE      */ .halfword 15
+/* TYPE_DRAGON   */ .halfword 7
+/* TYPE_DARK     */ .halfword 6
+/* TYPE_FAIRY    */ .halfword 9
 
 
 
